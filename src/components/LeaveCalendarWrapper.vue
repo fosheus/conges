@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
 import { useLeaveStore } from '../store/leaveStore';
 import LeaveCalendar from './LeaveCalendar.vue';
+import Legend from './Legend.vue';
 
 const leaveStore = useLeaveStore();
 await leaveStore.calculate();
@@ -33,6 +34,8 @@ const nextCalendarYear = computed(() => month.value === 11 ? year.value + 1 : ye
         <LeaveCalendar :month="month" :year="year" class="central-calendar" />
         <LeaveCalendar :month="nextCalendarMonth" :year="nextCalendarYear" class="periph-calendar" />
     </div>
+
+    <Legend></Legend>
 </template>
 
 <style scoped>
