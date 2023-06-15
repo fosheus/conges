@@ -58,7 +58,10 @@ function isHoliday(date: Date) {
 }
 
 function isNextToHoliday(date: Date) {
-  return isNextDayHoliday(date) || isPreviousDayHoliday(date);
+  return (
+    (isNextDayHoliday(date) && !isNextDayWeekendDay(date)) ||
+    (isPreviousDayHoliday(date) && !isPreviousDayWeekendDay(date))
+  );
 }
 
 function isNextDayHoliday(date: Date) {

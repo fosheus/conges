@@ -2,6 +2,7 @@ import { DayFlag } from "../enums/day-flag.enum";
 import { booleanToNumber } from "../utils/typeUtil";
 
 export class DayData {
+  private static letters = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
   isNextToWeekEnd: boolean = false;
   isNextToHoliday: boolean = false;
   isBangerBeamed: boolean = false;
@@ -16,8 +17,11 @@ export class DayData {
   }
 
   public getDayLetter() {
-    const letters = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
-    return letters[this.date.getDay()];
+    return DayData.letters[this.date.getDay()];
+  }
+
+  public getDayNumber() {
+    return this.date.getDate();
   }
 
   public getWeight() {
