@@ -18,3 +18,4 @@ RUN echo "<IfModule mod_rewrite.c>\n \
     RewriteCond %{REQUEST_FILENAME} -d\n \
     RewriteRule ^.*$ - [NC,L]\n \
     RewriteRule ^(.*) index.html [NC,L]\n \
+    </IfModule>" > ./.htaccess
