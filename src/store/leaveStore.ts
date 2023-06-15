@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { DayData } from "../models/day-data.model";
-import { getDaysWeights } from "../services/leave.service";
+import { LeaveService } from "../services/leave.service";
 
 function padStart02Digits(number: number) {
   return number.toString().padStart(2, "0");
@@ -9,9 +9,10 @@ function padStart02Digits(number: number) {
 
 export const useLeaveStore = defineStore("leave", () => {
   const days = ref(new Map<string, DayData>());
+  const leaveService = new LeaveService();
 
   async function calculate() {
-    days.value = await getDaysWeights();
+    days.value = await leaveService.getDaysWeights();
   }
 
   function getDayOfMonth(day: number, monthIndex: number, year: number) {

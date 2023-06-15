@@ -35,4 +35,7 @@ export class DayData {
   public isBangerDay() {
     return this.getWeight() > 4;
   }
+  public isDoubleBangerDay() {
+    return this.getWeight() == 6;
+  }
 }

@@ -1,5 +1,5 @@
 <template>
-    <div style="display: grid; grid-template: repeat(6,20px) /  repeat(7,50px);" :style="computedStyleCurrent()">
+    <div style="display: grid; grid-template: repeat(6,20px) /  repeat(7,50px);">
         <div v-for="dayLabel in dayOfWeekLabels" class="header">{{ dayLabel
         }}</div>
         <LeaveCell v-for="day in daysOfPreviousMonth" class="cell previous" :day-data="day" />
@@ -17,8 +17,6 @@ import LeaveCell from './LeaveCell.vue'
 const props = defineProps<{
     month: number,
     year: number,
-    current: boolean,
-    place?: "left" | "right"
 }>();
 
 const leaveStore = useLeaveStore();
@@ -41,15 +39,7 @@ watch(() => [props.year, props.month], ([newYear, newMonth]) => {
 });
 reset(props.year, props.month);
 
-function computedStyleCurrent() {
-    if (props.current) {
-        return { scale: 1.1 }
-    }
-    return {
-        color: 'grey',
-        transform: `perspective(300px) rotateY(${5 * (props.place === 'right' ? 1 : -1)}deg)`
-    }
-}
+
 
 
 
