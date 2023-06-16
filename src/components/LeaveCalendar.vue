@@ -1,6 +1,6 @@
 <template>
-    <div style="display: grid; grid-template: repeat(6,20px) /  repeat(7,50px);">
-        <div v-for="dayLabel in dayOfWeekLabels" class="header">{{ dayLabel
+    <div class="grid-container">
+        <div v-for="dayLabel in daysOfWeek" class="header">{{ dayLabel
         }}</div>
         <LeaveCell v-for="day in daysOfPreviousMonth" class="cell previous" :day-data="day" />
         <LeaveCell v-for="day in days" class="cell" :day-data="day" />
@@ -10,9 +10,10 @@
 <script setup lang="ts">
 
 import { ref, watch } from 'vue';
-import { useLeaveStore } from '../store/leaveStore';
+import { useLeaveStore } from '../store/leave.store';
 import { DayData } from '../models/day-data.model';
 import LeaveCell from './LeaveCell.vue'
+import { useDaysOfWeek } from '../composables/days-of-week';
 
 const props = defineProps<{
     month: number,
@@ -24,7 +25,7 @@ const leaveStore = useLeaveStore();
 if (props.month < 0 || props.month > 12) {
     throw new Error("month must be between 0 and 12 ")
 }
-const dayOfWeekLabels = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const { daysOfWeek } = useDaysOfWeek();
 
 const daysOfPreviousMonth = ref<DayData[]>([]);
 const days = ref<DayData[]>([]);
@@ -74,6 +75,11 @@ function reset(year: number, month: number) {
 
 </script>
 <style>
+.grid-container {
+    display: grid;
+    grid-template: repeat(6, 1.25em) / repeat(7, 3em);
+}
+
 .cell {
     text-align: center;
     width: 100%;
@@ -88,12 +94,20 @@ function reset(year: number, month: number) {
 
 .header {
     text-align: center;
-    font-size: smaller;
+    font-size: 0.75em;
     font-weight: bolder;
 }
 
 .next,
 .previous {
     color: grey
+}
+
+@media only screen and (max-width: 1200px) {
+    .grid-container {
+        display: grid;
+        grid-template: repeat(6, 1em) / repeat(7, 2.5em);
+    }
+
 }
 </style>

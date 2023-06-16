@@ -3,142 +3,159 @@ import { DayData } from "../models/day-data.model";
 import { formattedDate } from "../utils/date.util";
 
 export class LeaveService {
-  private static YEARS = 5;
-  private holidays: any;
-  private dayDataMap = new Map<string, DayData>();
+    private static readonly WEEK_LENGTH = 7;
+    private holidays: any;
+    private dayDataMap = new Map<string, DayData>();
 
-  public async getDaysWeights(): Promise<Map<string, DayData>> {
-    this.holidays = await getHolidays();
-    this.dayDataMap.clear();
+    public async getDaysWeights(holidays: any, startDate: Date, endDate: Date): Promise<Map<string, DayData>> {
 
-    const today = new Date();
-    const endDay = new Date(today);
-    endDay.setFullYear(endDay.getFullYear() + 2);
-    // populate
-    let i = 0;
-    while (i < 365 * LeaveService.YEARS) {
-      const current = this.getDayOffset(today, i);
-      const holiday = this.isHoliday(current);
-      const weekend = this.isWeekEnd(current);
-      const dayData = new DayData(current, holiday, weekend);
-      this.dayDataMap.set(formattedDate(current), dayData);
+        this.dayDataMap.clear();
+        this.holidays = holidays;
 
-      i++;
+        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+
+
+        // populate
+        let i = 0;
+        while (i <= diffDays) {
+            const current = this.getDayOffset(startDate, i);
+            const holiday = this.isHoliday(current);
+            const weekend = this.isWeekEnd(current);
+            const dayData = new DayData(current, holiday, weekend);
+            this.dayDataMap.set(formattedDate(current), dayData);
+
+            i++;
+        }
+        i = 0;
+        while (i <= diffDays) {
+            const current = this.getDayOffset(startDate, i);
+            const dayData = this.dayDataMap.get(formattedDate(current));
+            if (dayData == null || dayData.isWeekendDay) {
+                i++;
+                continue;
+            }
+
+            if (dayData.isHoliday && (this.isNextToWeekend(dayData.date) || this.isNextDayHoliday(dayData.date))) {
+                this.radiateToDaysBeforeAndAfter(dayData.date, 4);
+                i++;
+                continue;
+            }
+
+
+            if (this.isNextToHoliday(dayData.date)) {
+                dayData.isNextToHoliday = true;
+            }
+            if (this.isNextToWeekend(dayData.date)) {
+                dayData.isNextToWeekEnd = true;
+            }
+            if (dayData.isBangerDay()) {
+                this.radiateToWeekBeforeAndAfter(dayData.date);
+            }
+            i++;
+        }
+
+        return Promise.resolve(this.dayDataMap);
     }
-    i = 0;
-    while (i < 365 * LeaveService.YEARS) {
-      const current = this.getDayOffset(today, i);
-      const dayData = this.dayDataMap.get(formattedDate(current));
-      if (dayData == null || dayData.isHoliday || dayData.isWeekendDay) {
-        i++;
-        continue;
-      }
-      if (this.isNextToHoliday(dayData.date)) {
-        dayData.isNextToHoliday = true;
-      }
-      if (this.isNextToWeekend(dayData.date)) {
-        dayData.isNextToWeekEnd = true;
-      }
-      if (dayData.isBangerDay()) {
-        this.radiateToWeekBeforeAndAfter(dayData.date);
-      }
-      i++;
+
+    private getDayOffset(date: Date, offset: number) {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + offset);
+        return nextDay;
     }
 
-    return Promise.resolve(this.dayDataMap);
-  }
-
-  private getDayOffset(date: Date, offset: number) {
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + offset);
-    return nextDay;
-  }
-
-  private isHoliday(date: Date) {
-    const holiday = this.holidays[formattedDate(date)];
-    return !!holiday;
-  }
-
-  private isNextToHoliday(date: Date) {
-    return (
-      (this.isNextDayHoliday(date) && !this.isNextDayWeekendDay(date)) ||
-      (this.isPreviousDayHoliday(date) && !this.isPreviousDayWeekendDay(date))
-    );
-  }
-
-  private isNextDayHoliday(date: Date) {
-    return this.isHoliday(this.getNextDay(date));
-  }
-
-  private isPreviousDayHoliday(date: Date) {
-    return this.isHoliday(this.getPreviousDay(date));
-  }
-
-  private isWeekEnd(date: Date) {
-    return date.getDay() === 0 || date.getDay() === 6;
-  }
-
-  private isNextToWeekend(date: Date) {
-    return this.isNextDayWeekendDay(date) || this.isPreviousDayWeekendDay(date);
-  }
-
-  private isNextDayWeekendDay(date: Date) {
-    return this.isWeekEnd(this.getNextDay(date));
-  }
-
-  private isPreviousDayWeekendDay(date: Date) {
-    return this.isWeekEnd(this.getPreviousDay(date));
-  }
-
-  private getPreviousDay(date: Date) {
-    const previous = new Date(date);
-    previous.setDate(previous.getDate() - 1);
-    return previous;
-  }
-
-  private getNextDay(date: Date) {
-    const previous = new Date(date);
-    previous.setDate(previous.getDate() + 1);
-    return previous;
-  }
-  private radiateToWeekBeforeAndAfter(date: Date) {
-    this.radiateToWeekAfter(date);
-    this.radiateToWeekBefore(date);
-  }
-
-  private radiateToWeekAfter(date: Date, depth = 0) {
-    if (depth === 7) {
-      return;
+    private isHoliday(date: Date) {
+        const holiday = this.holidays[formattedDate(date)];
+        return !!holiday;
     }
-    const dayAfter = this.getNextDay(date);
-    const dayAfterData = this.dayDataMap.get(formattedDate(dayAfter));
-    if (!dayAfterData) {
-      return;
-    }
-    if (!dayAfterData.isBangerBeamed) {
-      dayAfterData.isBangerBeamed = true;
-      if (dayAfterData.isBangerDay()) {
-        this.radiateToWeekBeforeAndAfter(dayAfter);
-      }
-    }
-    this.radiateToWeekAfter(dayAfter, depth + 1);
-  }
 
-  private radiateToWeekBefore(date: Date, depth = 0) {
-    if (depth === 7) {
-      return;
+    private isNextToHoliday(date: Date) {
+        return (
+            (this.isNextDayHoliday(date) && !this.isNextDayWeekendDay(date)) ||
+            (this.isPreviousDayHoliday(date) && !this.isPreviousDayWeekendDay(date))
+        );
     }
-    const dayBefore = this.getPreviousDay(date);
-    const dayBeforeData = this.dayDataMap.get(formattedDate(dayBefore));
-    if (!dayBeforeData) {
-      return;
+
+    private isNextDayHoliday(date: Date) {
+        return this.isHoliday(this.getNextDay(date));
     }
-    if (!dayBeforeData.isBangerBeamed) {
-      dayBeforeData.isBangerBeamed = true;
-      if (dayBeforeData.isBangerDay()) {
-        this.radiateToWeekBeforeAndAfter(dayBefore);
-      }
+
+    private isPreviousDayHoliday(date: Date) {
+        return this.isHoliday(this.getPreviousDay(date));
     }
-    this.radiateToWeekBefore(dayBefore, depth + 1);
-  }
+
+    private isWeekEnd(date: Date) {
+        return date.getDay() === 0 || date.getDay() === 6;
+    }
+
+    private isNextToWeekend(date: Date) {
+        return this.isNextDayWeekendDay(date) || this.isPreviousDayWeekendDay(date);
+    }
+
+    private isNextDayWeekendDay(date: Date) {
+        return this.isWeekEnd(this.getNextDay(date));
+    }
+
+    private isPreviousDayWeekendDay(date: Date) {
+        return this.isWeekEnd(this.getPreviousDay(date));
+    }
+
+    private getPreviousDay(date: Date, gap = 1) {
+        const previous = new Date(date);
+        previous.setDate(previous.getDate() - gap);
+        return previous;
+    }
+
+    private getNextDay(date: Date, gap = 1) {
+        const previous = new Date(date);
+        previous.setDate(previous.getDate() + gap);
+        return previous;
+    }
+
+    private radiateToWeekBeforeAndAfter(date: Date) {
+        this.radiateToDaysBeforeAndAfter(date, LeaveService.WEEK_LENGTH);
+    }
+    private radiateToDaysBeforeAndAfter(date: Date, depth = 0) {
+        this.radiateToDaysAfter(date, depth);
+        this.radiateToDaysBefore(date, depth);
+    }
+
+    private radiateToDaysAfter(beamingDate: Date, depth: number) {
+        if (depth === 0) {
+            return;
+        }
+        const dayAfter = this.getNextDay(beamingDate, depth);
+        const dayAfterData = this.dayDataMap.get(formattedDate(dayAfter));
+        if (!dayAfterData) {
+            return;
+        }
+        const formattedBeamingDate = formattedDate(beamingDate);
+        if (!dayAfterData.isBeamedBy(formattedBeamingDate)) {
+            dayAfterData.addBangerBeam(formattedBeamingDate)
+            if (dayAfterData.isBangerDay()) {
+                this.radiateToDaysBeforeAndAfter(dayAfter);
+            }
+        }
+        this.radiateToDaysAfter(beamingDate, depth - 1);
+    }
+
+    private radiateToDaysBefore(beamingDate: Date, depth: number) {
+        if (depth === 0) {
+            return;
+        }
+        const dayBefore = this.getPreviousDay(beamingDate, depth);
+        const dayBeforeData = this.dayDataMap.get(formattedDate(dayBefore));
+        if (!dayBeforeData) {
+            return;
+        }
+        const formattedBeamingDate = formattedDate(beamingDate);
+        if (!dayBeforeData.isBeamedBy(formattedBeamingDate)) {
+            dayBeforeData.addBangerBeam(formattedBeamingDate)
+            if (dayBeforeData.isBangerDay()) {
+                this.radiateToDaysBeforeAndAfter(dayBefore);
+            }
+        }
+        this.radiateToDaysBefore(beamingDate, depth - 1);
+    }
 }
