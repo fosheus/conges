@@ -3,9 +3,9 @@ import { booleanToNumber } from "../utils/typeUtil";
 
 export class DayData {
     private static letters = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
+    bangerBeam: string[] = [];
     isNextToWeekEnd: boolean = false;
     isNextToHoliday: boolean = false;
-    private bangerBeam: string[] = [];
 
     date: Date;
     isHoliday: boolean;
